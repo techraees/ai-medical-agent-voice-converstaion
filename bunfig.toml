@@ -1,0 +1,5 @@
+[install]
+# Force all dependencies to be hoisted to root node_modules
+# No separate node_modules in packages
+linker = "hoisted"
+
