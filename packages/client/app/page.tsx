@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 
 export default function Home() {
@@ -26,11 +27,19 @@ export default function Home() {
    }, [])
 
    return (
-      <>
-         <h1>Hello World</h1>
+      <div className="p-8 space-y-4">
+         <h1 className="text-3xl font-bold underline">Hello world!</h1>
+
+         <div className="space-x-4">
+            <Button>Default Button</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="destructive">Destructive</Button>
+         </div>
+
          {loading && <p>Loading...</p>}
-         {error && <p>Error: {error}</p>}
-         {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
-      </>
+         {error && <p className="text-red-500">Error: {error}</p>}
+         {data && <pre className="bg-gray-100 p-4 rounded">{JSON.stringify(data, null, 2)}</pre>}
+      </div>
    )
 }

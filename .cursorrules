@@ -1,0 +1,15 @@
+# Commit Message Guidelines
+
+When generating commit messages:
+- Keep commit messages concise: 20-30 words maximum
+- Use imperative mood (e.g., "Add feature" not "Added feature")
+- Be specific and descriptive but brief
+- Focus on what changed, not why (unless critical)
+- Avoid unnecessary words or phrases
+
+Example good commit messages:
+- "Add user authentication with JWT tokens"
+- "Fix button styling issue in login page"
+- "Update API proxy configuration for localhost:5000"
+- "Refactor user service to use async/await pattern"
+
