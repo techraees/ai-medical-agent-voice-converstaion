@@ -1,8 +1,12 @@
 import { Router } from 'express'
 import { ConsultationController } from '../controllers/consultation.controller'
+import { authenticate } from '../middleware/auth.middleware'
 
 const router = Router()
 const controller = new ConsultationController()
+
+// All consultation routes require authentication
+router.use(authenticate)
 
 router.post('/', controller.create)
 router.get('/', controller.getAll)
