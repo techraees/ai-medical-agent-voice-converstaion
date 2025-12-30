@@ -45,4 +45,36 @@ export const chatService = {
          message: response.output_text,
       }
    },
+
+   async sendMessageStream(prompt: string, conversationId: string, onChunk: (chunk: string) => void): Promise<void> {
+      const previousResponseId = conversationRepository.getLastResponseId(conversationId)
+
+      const requestParams: any = {
+         instructions: instructions,
+         model: 'gpt-4o-mini',
+         temperature: 0.2,
+         max_output_tokens: 200,
+         input: prompt,
+      }
+
+      // Only add previous_response_id if it exists (for continuing conversations)
+      if (previousResponseId) {
+         requestParams.previous_response_id = previousResponseId
+      }
+
+      const stream = await client.responses.stream(requestParams)
+
+      let fullText = ''
+
+      for await (const event of stream) {
+         if (event.type === 'response.output_text.delta') {
+            fullText += event.delta
+            onChunk(event.delta) // 🔥 send partial text
+         }
+
+         if (event.type === 'response.completed') {
+            conversationRepository.setLastResponseId(conversationId, event.response.id)
+         }
+      }
+   },
 }

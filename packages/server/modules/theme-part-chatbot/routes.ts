@@ -8,5 +8,6 @@ router.get('/', (req, res) => {
 })
 
 router.post('/chat', chatController.sendMessage)
+router.post('/chat-stream', chatController.sendMessageStream)
 
 export default router

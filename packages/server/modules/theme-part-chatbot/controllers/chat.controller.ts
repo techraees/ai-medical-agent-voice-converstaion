@@ -50,4 +50,44 @@ export const chatController = {
          })
       }
    },
+
+   async sendMessageStream(req: Request, res: Response) {
+      // Validate request body with zod schema
+      const validationResult = chatSchema.safeParse(req.body)
+
+      if (!validationResult.success) {
+         return res.status(400).json({
+            error: 'Validation failed',
+            details: validationResult.error.issues.map((err: z.ZodIssue) => ({
+               field: err.path.join('.'),
+               message: err.message,
+            })),
+         })
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      res.flushHeaders()
+
+      try {
+         const { prompt, conversationId } = req.body
+
+         await chatService.sendMessageStream(prompt, conversationId, (chunk) => {
+            // Safely serialize the chunk to avoid SSE protocol errors with newlines
+            res.write(`data: ${JSON.stringify(chunk)}\n\n`)
+         })
+
+         res.write(`event: end\ndata: "done"\n\n`)
+         res.end()
+      } catch (error) {
+         res.write(`event: error\ndata: "failed"\n\n`)
+         res.end()
+         // Handle other unexpected errors
+         return res.status(500).json({
+            error: 'Internal server error',
+            message: error instanceof Error ? error.message : 'An unknown error occurred',
+         })
+      }
+   },
 }
