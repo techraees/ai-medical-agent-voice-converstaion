@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import express from 'express'
 import router from './routes'
-// import { connectDatabase } from './config/database'
+import { connectDatabase } from './config/database.ts'
 
 dotenv.config()
 
@@ -31,7 +31,7 @@ app.use(router)
 const startServer = async () => {
    try {
       // Connect to MongoDB
-      // await connectDatabase()
+      await connectDatabase()
 
       // Start Express server
       app.listen(port, () => {
