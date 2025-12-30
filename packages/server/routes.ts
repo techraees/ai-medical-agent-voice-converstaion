@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import personalPortfolioRoutes from './modules/personal-portfolio/routes'
 import medicalConsultantAgentRoutes from './modules/medical-consultant-agent/routes'
+import themeParkChatbotRoutes from './modules/theme-part-chatbot/routes'
 
 const router = Router()
 
@@ -15,5 +16,6 @@ router.get('/api/health', (req, res) => {
 // Module routes
 router.use('/api/personal-portfolio', personalPortfolioRoutes)
 router.use('/api/medical-consultant-agent', medicalConsultantAgentRoutes)
+router.use('/api/theme-park-chatbot', themeParkChatbotRoutes)
 
 export default router

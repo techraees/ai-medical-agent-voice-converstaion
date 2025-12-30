@@ -3,9 +3,10 @@
 import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useDispatch } from 'react-redux'
+import { setNavbarHeight } from '@/lib/slices/navbarSlice'
 
 interface NavItemHoverContent {
    title: string
@@ -17,7 +18,43 @@ interface NavItemHoverContent {
 
 export function Navbar() {
    const pathname = usePathname()
+   const router = useRouter()
    const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+   const dispatch = useDispatch()
+   const navbarRef = useRef<HTMLElement>(null)
+
+   // Measure navbar height and update Redux on mount, resize, and content changes
+   useEffect(() => {
+      const updateNavbarHeight = () => {
+         if (navbarRef.current) {
+            const height = navbarRef.current.offsetHeight
+            dispatch(setNavbarHeight(height))
+         }
+      }
+
+      // Initial measurement
+      updateNavbarHeight()
+
+      // Use ResizeObserver to track height changes (including content changes)
+      let resizeObserver: ResizeObserver | null = null
+      if (navbarRef.current && typeof ResizeObserver !== 'undefined') {
+         resizeObserver = new ResizeObserver(() => {
+            updateNavbarHeight()
+         })
+         resizeObserver.observe(navbarRef.current)
+      }
+
+      // Update on window resize as fallback
+      window.addEventListener('resize', updateNavbarHeight)
+
+      // Cleanup
+      return () => {
+         window.removeEventListener('resize', updateNavbarHeight)
+         if (resizeObserver && navbarRef.current) {
+            resizeObserver.unobserve(navbarRef.current)
+         }
+      }
+   }, [dispatch])
 
    const navItems: Array<{
       href: string
@@ -31,7 +68,7 @@ export function Navbar() {
             title: 'Personal Portfolio',
             body: 'Explore my professional portfolio showcasing my projects, skills, and experience as a Senior Software Engineer.',
             footer: 'Click to view portfolio',
-            image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
+            image: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
          },
       },
       {
@@ -41,13 +78,23 @@ export function Navbar() {
             title: 'Medical Consultant Agent',
             body: 'AI-powered medical consultation platform with voice conversation capabilities. Get instant medical advice and support.',
             footer: 'Start consultation',
-            image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop',
+            image: 'https://plus.unsplash.com/premium_photo-1673953509982-632a317d1f8c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+         },
+      },
+      {
+         href: '/theme-park-chatbot',
+         label: 'TPC',
+         hoverContent: {
+            title: 'Theme Park Chatbot',
+            body: 'AI-powered chatbot for theme park information. Get ticket booking, pricing, hotel details, and park information instantly.',
+            footer: 'Start chatting',
+            image: 'https://images.unsplash.com/photo-1701772863070-62c506bbf11a?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
          },
       },
    ]
 
    return (
-      <nav className="border-b bg-background/95 backdrop-blur">
+      <nav ref={navbarRef} className="border-b bg-background/95 backdrop-blur">
          <div className="container mx-auto flex h-16 items-center justify-between px-4">
             <div className="flex items-center gap-2">
                <div className="flex items-center gap-2">
@@ -117,7 +164,15 @@ export function Navbar() {
                                  {/* Footer */}
                                  {item.hoverContent.footer && (
                                     <div className="border-t bg-muted/50 px-4 py-2">
-                                       <p className="text-xs text-muted-foreground">{item.hoverContent.footer}</p>
+                                       <p
+                                          className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                                          onClick={() => {
+                                             router.push(item.href)
+                                             setHoveredItem(null)
+                                          }}
+                                       >
+                                          {item.hoverContent.footer}
+                                       </p>
                                     </div>
                                  )}
                               </div>
