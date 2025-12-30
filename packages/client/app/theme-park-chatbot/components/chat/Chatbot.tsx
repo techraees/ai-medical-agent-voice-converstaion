@@ -1,5 +1,5 @@
 'use client'
-import axios from 'axios'
+
 import { useRef, useState } from 'react'
 import ChatInput, { type ChatFormData } from './ChatInput'
 import type { Message } from './ChatMessages'
@@ -31,20 +31,74 @@ const Chatbot = () => {
       try {
          setError(null)
          setMessages((prev) => [...prev, { content: prompt, role: 'user' }])
+         // Create a placeholder for the bot message
+         setMessages((prev) => [...prev, { content: '', role: 'bot' }])
          setIsBotTyping(true)
 
          popAudio.play()
 
-         const { data } = await axios.post<ChatResponse>('/api/theme-park-chatbot/chat', {
-            prompt,
-            conversationId: conversationId.current,
+         const response = await fetch('/api/theme-park-chatbot/chat-stream', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+               prompt,
+               conversationId: conversationId.current,
+            }),
          })
 
-         setMessages((prev) => [...prev, { content: data.message, role: 'bot' }])
+         if (!response.ok) {
+            throw new Error(response.statusText)
+         }
+
+         const reader = response.body?.getReader()
+         if (!reader) throw new Error('No reader available')
+
+         const decoder = new TextDecoder()
+         let botMessage = ''
+
+         while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            const chunk = decoder.decode(value)
+            console.log('chunk', chunk)
+            const lines = chunk.split('\n\n')
+
+            for (const line of lines) {
+               if (line.startsWith('data: ')) {
+                  const data = line.slice(6)
+                  if (data === '"done"') {
+                     break
+                  }
+                  if (data === '"failed"') {
+                     throw new Error('Stream failed')
+                  }
+                  try {
+                     const parsed = JSON.parse(data)
+                     botMessage += parsed
+                     setMessages((prev) => {
+                        const newMessages = [...prev]
+                        const lastMessage = newMessages[newMessages.length - 1]
+                        if (lastMessage.role === 'bot') {
+                           lastMessage.content = botMessage
+                        }
+                        return newMessages
+                     })
+                  } catch (e) {
+                     // Ignore parse errors for non-JSON data
+                  }
+               }
+            }
+         }
+
          notificationAudio.play()
       } catch (error) {
          console.error('Error sending message:', error)
          setError('Something went wrong. Please try again.')
+         // Remove the incomplete bot message if error occurs
+         setMessages((prev) => prev.slice(0, -1))
       } finally {
          setIsBotTyping(false)
       }

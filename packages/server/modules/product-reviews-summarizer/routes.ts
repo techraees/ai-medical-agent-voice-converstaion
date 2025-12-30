@@ -1,8 +1,10 @@
 import { Router } from 'express'
-import { summaryController } from './controllers/summary.controller'
+import { reviewController } from './controllers/review.controller'
+import { productController } from './controllers/product.controller'
 
 const router = Router()
 
-router.post('/summarize', summaryController.summarize)
-
+router.get('/products', productController.getProducts)
+router.get('/products/:id/reviews', reviewController.getReviews)
+router.post('/products/:id/reviews/summarize', reviewController.summarizeReviews)
 export default router
