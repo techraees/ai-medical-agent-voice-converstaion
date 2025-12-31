@@ -6,4 +6,8 @@ export const productRepository = {
          where: { id: productId },
       })
    },
+
+   getProducts() {
+      return prisma.product.findMany({})
+   },
 }

@@ -1,11 +1,10 @@
 import type { Request, Response } from 'express'
-import { prisma } from '../../../lib/prisma'
+import { productService } from '../services/product.service'
 
 export const productController = {
    async getProducts(req: Request, res: Response) {
-      const products = await prisma.review.findMany({})
+      const products = await productService.getProducts()
 
-      console.log(products)
       res.json({
          products,
       })
