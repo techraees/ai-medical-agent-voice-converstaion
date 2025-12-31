@@ -1,6 +1,8 @@
+'use client'
+
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { HiSparkles } from 'react-icons/hi2'
-import { Button } from '../ui/button'
+import { Button } from '../../../components/ui/button'
 import ReviewSkeleton from './ReviewSkeleton'
 import StarRating from './StarRating'
 import { type GetReviewsResponse, reviewsApi, type SummarizeResponse } from './reviewsApi'
@@ -48,7 +50,7 @@ const ReviewList = ({ productId }: Props) => {
                <div>
                   <Button
                      onClick={() => summaryMutation.mutate()}
-                     className="cursor-pointer"
+                     className="cursor-pointer mt-5"
                      disabled={summaryMutation.isPending}
                   >
                      <HiSparkles />

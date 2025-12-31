@@ -19,10 +19,14 @@ export type SummarizeResponse = {
 
 export const reviewsApi = {
    fetchReviews(productId: number) {
-      return axios.get<GetReviewsResponse>(`/api/products/${productId}/reviews`).then((res) => res.data)
+      return axios
+         .get<GetReviewsResponse>(`/api/product-reviews-summarizer/products/${productId}/reviews`)
+         .then((res) => res.data)
    },
 
    summarizeReviews(productId: number) {
-      return axios.post<SummarizeResponse>(`/api/products/${productId}/reviews/summarize`).then((res) => res.data)
+      return axios
+         .post<SummarizeResponse>(`/api/product-reviews-summarizer/products/${productId}/reviews/summarize`)
+         .then((res) => res.data)
    },
 }
