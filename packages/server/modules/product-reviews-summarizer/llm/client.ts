@@ -50,20 +50,19 @@ export const llmClient = {
    },
 
    async summarizeReviews(reviews: string) {
-      const response = await ollamaClient.chat({
-         model: 'tinyllama',
-         messages: [
-            {
-               role: 'system',
-               content: summarizePrompt,
-            },
-            {
-               role: 'user',
-               content: reviews,
-            },
-         ],
+      const prompt = `
+      Summarize the following customer reviews into a short paragraph
+highlighting key themes, both positive and negative:
+
+         ${reviews}
+      `
+      const response = await openAIClient.responses.create({
+         model: 'gpt-4.1',
+         input: prompt,
+         temperature: 0.2,
+         max_output_tokens: 500,
       })
 
-      return response.message.content
+      return response.output_text
    },
 }

@@ -41,7 +41,7 @@ export const reviewController = {
          return
       }
 
-      const reviews = await reviewRepository.getReviews(productId, 1)
+      const reviews = await reviewRepository.getReviews(productId, 10)
       if (!reviews.length) {
          res.status(400).json({ error: 'There are no reviews to summarize.' })
          return
