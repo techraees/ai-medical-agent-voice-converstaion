@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HiSparkles } from 'react-icons/hi2'
 import { Button } from '../../../components/ui/button'
 import ReviewSkeleton from './ReviewSkeleton'
@@ -12,10 +12,17 @@ type Props = {
 }
 
 const ReviewList = ({ productId }: Props) => {
+   const queryClient = useQueryClient()
+
    const summaryMutation = useMutation<SummarizeResponse>({
       mutationFn: () => reviewsApi.summarizeReviews(productId),
+      onSuccess: () => {
+         // Refetch reviews after summarize
+         queryClient.invalidateQueries({
+            queryKey: ['reviews', productId],
+         })
+      },
    })
-
    const reviewsQuery = useQuery<GetReviewsResponse>({
       queryKey: ['reviews', productId],
       queryFn: () => reviewsApi.fetchReviews(productId),
@@ -39,13 +46,30 @@ const ReviewList = ({ productId }: Props) => {
       return null
    }
 
-   const currentSummary = reviewsQuery.data.summary || summaryMutation.data?.summary
-
+   const currentSummary = summaryMutation.data?.summary || reviewsQuery.data.summary
    return (
       <div>
          <div className="mb-5">
+            {currentSummary && (
+               <div>
+                  <Button
+                     onClick={() => summaryMutation.mutate()}
+                     className="cursor-pointer my-2"
+                     disabled={summaryMutation.isPending}
+                  >
+                     <HiSparkles />
+                     Summarize
+                  </Button>
+                  {summaryMutation.isPending && (
+                     <div className="py-3">
+                        <ReviewSkeleton />
+                     </div>
+                  )}
+                  {summaryMutation.isError && <p className="text-red-500">Could not summarize reviews. Try again!</p>}
+               </div>
+            )}
             {currentSummary ? (
-               <p>{currentSummary}</p>
+               !summaryMutation.isPending && <p>{currentSummary}</p>
             ) : (
                <div>
                   <Button
