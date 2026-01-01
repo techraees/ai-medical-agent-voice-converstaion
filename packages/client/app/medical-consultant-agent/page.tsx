@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Plus, Search, Loader2, Sparkles } from 'lucide-react'
 import {
    Dialog,
    DialogContent,
@@ -15,16 +16,64 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AIDoctorAgents } from '@/data/medical-consultant-agent/doctorList'
+import { AuthModal } from './components/AuthModal'
 
 const page = () => {
    const [isModalOpen, setIsModalOpen] = useState(false)
+   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
    const [searchQuery, setSearchQuery] = useState('')
 
+   // Auth State
+   const [user, setUser] = useState<any>(null)
+   const [token, setToken] = useState<string | null>(null)
+
+   // Suggestion State
+   const [symptom, setSymptom] = useState('')
+   const [isSuggesting, setIsSuggesting] = useState(false)
+   const [suggestedDoctors, setSuggestedDoctors] = useState<typeof AIDoctorAgents | null>(null)
+
    const handleStartConsultation = () => {
+      if (!user) {
+         setIsAuthModalOpen(true)
+         return
+      }
       setIsModalOpen(true)
    }
 
-   const filteredDoctors = AIDoctorAgents.filter(
+   const handleAuthSuccess = (accessToken: string, userData: any) => {
+      setToken(accessToken)
+      setUser(userData)
+      // Automatically open consultation modal after login
+      setIsModalOpen(true)
+   }
+
+   const handleGetSuggestions = async () => {
+      if (!symptom.trim()) return
+
+      setIsSuggesting(true)
+      try {
+         const response = await fetch('/api/medical-consultant-agent/doctors/suggested-doctors-list', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: symptom }),
+         })
+
+         if (!response.ok) throw new Error('Failed to get suggestions')
+
+         const data = await response.json()
+         setSuggestedDoctors(data)
+      } catch (error) {
+         console.error('Error fetching suggestions:', error)
+      } finally {
+         setIsSuggesting(false)
+      }
+   }
+
+   const displayedDoctors = suggestedDoctors || AIDoctorAgents
+
+   const filteredDoctors = displayedDoctors.filter(
       (doctor) =>
          doctor.specialist.toLowerCase().includes(searchQuery.toLowerCase()) ||
          doctor.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,6 +108,37 @@ const page = () => {
                </DialogHeader>
 
                <div className="p-6 space-y-6">
+                  {/* AI Suggestion Section */}
+                  <div className="bg-muted/30 p-4 rounded-lg space-y-3 border">
+                     <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-purple-500" />
+                        <h3 className="font-semibold text-sm">AI Recommendation</h3>
+                     </div>
+                     <div className="flex gap-2">
+                        <Textarea
+                           placeholder="Describe your symptoms (e.g., 'I have a severe headache and sensitivity to light')..."
+                           value={symptom}
+                           onChange={(e) => setSymptom(e.target.value)}
+                           className="resize-none min-h-[60px]"
+                        />
+                     </div>
+                     <Button
+                        onClick={handleGetSuggestions}
+                        disabled={isSuggesting || !symptom.trim()}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                     >
+                        {isSuggesting ? (
+                           <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Analyzing Symptoms...
+                           </>
+                        ) : (
+                           'Get Specialist Recommendations'
+                        )}
+                     </Button>
+                  </div>
+
                   {/* Search Input */}
                   <div className="relative">
                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -73,8 +153,26 @@ const page = () => {
 
                   {/* Doctors List */}
                   <div className="space-y-4">
-                     <h3 className="text-lg font-semibold">Available Doctors ({filteredDoctors.length})</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                     <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">
+                           {suggestedDoctors ? 'Recommended Specialists' : 'Available Doctors'} (
+                           {filteredDoctors.length})
+                        </h3>
+                        {suggestedDoctors && (
+                           <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                 setSuggestedDoctors(null)
+                                 setSymptom('')
+                              }}
+                              className="text-xs text-muted-foreground"
+                           >
+                              Clear Recommendations
+                           </Button>
+                        )}
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2">
                         {filteredDoctors.length > 0 ? (
                            filteredDoctors.map((doctor) => (
                               <Card
@@ -189,7 +287,13 @@ const page = () => {
                   <Card
                      key={doctor.id}
                      className="cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-                     onClick={() => handleDoctorSelect(doctor)}
+                     onClick={() => {
+                        if (!user) {
+                           setIsAuthModalOpen(true)
+                           return
+                        }
+                        handleDoctorSelect(doctor)
+                     }}
                   >
                      <div className="relative h-48 w-full bg-muted">
                         <img src={doctor.image} alt={doctor.specialist} className="w-full h-full object-cover" />
@@ -204,6 +308,10 @@ const page = () => {
                            variant="outline"
                            onClick={(e) => {
                               e.stopPropagation()
+                              if (!user) {
+                                 setIsAuthModalOpen(true)
+                                 return
+                              }
                               handleDoctorSelect(doctor)
                            }}
                         >
@@ -214,6 +322,13 @@ const page = () => {
                ))}
             </div>
          </div>
+
+         {/* Auth Modal */}
+         <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onLoginSuccess={handleAuthSuccess}
+         />
       </div>
    )
 }

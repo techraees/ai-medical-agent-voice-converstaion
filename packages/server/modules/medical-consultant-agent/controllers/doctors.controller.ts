@@ -1,18 +1,22 @@
 import type { Request, Response } from 'express'
 import { DoctorsService } from '../services/doctors.service'
 
-const doctorsService = new DoctorsService()
+export class DoctorsController {
+   private service: DoctorsService
 
-export default {
-   getListOfDoctors(req: Request, res: Response) {
-      const doctors = doctorsService.getListOfDoctors()
+   constructor() {
+      this.service = new DoctorsService()
+   }
+
+   getListOfDoctors = (req: Request, res: Response) => {
+      const doctors = this.service.getListOfDoctors()
       res.json(doctors)
-   },
+   }
 
-   async getSuggestedDoctors(req: Request, res: Response) {
-      const doctors = await doctorsService.getSuggestedDoctors({
+   getSuggestedDoctors = async (req: Request, res: Response) => {
+      const doctors = await this.service.getSuggestedDoctors({
          prompt: req.body.prompt,
       })
       res.json(doctors)
-   },
+   }
 }
