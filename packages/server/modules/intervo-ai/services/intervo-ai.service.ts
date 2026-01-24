@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { IntervoSession } from '../models/intervo-session.model'
 import type { IIntervoSession } from '../models/intervo-session.model'
+import { IntervoQuestionSet } from '../models/intervo-question-set.model'
 
 export class IntervoAIService {
    private openai: OpenAI
@@ -19,33 +20,56 @@ export class IntervoAIService {
       }
    }
 
-   async startSession(topic: string, region: string, userId?: string) {
-      // Use LLM to simulate a "web search" and generate top 5 relevant interview questions
-      const response = await this.openai.chat.completions.create({
-         model: 'gpt-4o',
-         messages: [
-            {
-               role: 'system',
-               content: `You are an expert recruitment consultant specializing in the ${region} job market. 
-                    Your task is to simulate a web search and identify the top 5 most common and challenging interview questions for a ${topic} position in this region. 
-                    YOU MUST RETURN ONLY A JSON OBJECT with a "questions" key containing an array of strings. 
-                    Example: {"questions": ["question 1", "question 2", ...]}
-                    Do not include any other text.`,
-            },
-            {
-               role: 'user',
-               content: `Fetch the top 5 interview questions for a ${topic} position in ${region}.`,
-            },
-         ],
-         response_format: { type: 'json_object' },
+   async startSession(topic: string, region: string, userId?: string, questionCount: number = 5) {
+      // 1. Check if we have cached questions for this topic and region
+      // We also check if the cached question set has at least the requested number of questions
+      let questionSet = await IntervoQuestionSet.findOne({
+         topic: topic.toLowerCase().trim(),
+         region: region.toLowerCase().trim(),
       })
 
-      const content = response.choices[0]?.message?.content
-      if (!content) {
-         throw new Error('Failed to fetch questions from AI')
+      let questions: string[] = []
+
+      if (questionSet && questionSet.questions.length >= questionCount) {
+         // If we have more than needed, just take the first N
+         questions = questionSet.questions.slice(0, questionCount)
+      } else {
+         // 2. Generate via OpenAI if not cached or not enough questions
+         const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+               {
+                  role: 'system',
+                  content: `You are an expert recruitment consultant specializing in the ${region} job market. 
+                     Your task is to simulate a web search and identify the top ${questionCount} most common and challenging interview questions for a ${topic} position in this region. 
+                     YOU MUST RETURN ONLY A JSON OBJECT with a "questions" key containing an array of strings. 
+                     Example: {"questions": ["question 1", "question 2", ...]}
+                     Do not include any other text.`,
+               },
+               {
+                  role: 'user',
+                  content: `Fetch the top ${questionCount} interview questions for a ${topic} position in ${region}.`,
+               },
+            ],
+            response_format: { type: 'json_object' },
+         })
+
+         const content = response.choices[0]?.message?.content
+         if (!content) {
+            throw new Error('Failed to fetch questions from AI')
+         }
+         const parsed = JSON.parse(content)
+         questions = parsed.questions || []
+
+         // 3. Cache the newly generated questions
+         if (questions.length > 0) {
+            await IntervoQuestionSet.create({
+               topic: topic.toLowerCase().trim(),
+               region: region.toLowerCase().trim(),
+               questions,
+            })
+         }
       }
-      const parsed = JSON.parse(content)
-      const questions: string[] = parsed.questions || []
 
       const session = new IntervoSession({
          userId,
@@ -120,29 +144,29 @@ export class IntervoAIService {
             {
                role: 'system',
                content: `You are an expert career coach. Analyze the following interview transcript for a ${session.topic} role in ${session.region}. 
-                    For each question, provide:
-                    1. A "suggestedAnswer" (The ideal professional answer).
-                    2. A brief "analysis" of the user's answer.
-                    
-                    Also provide an overall report:
-                    1. Overall Score (0-100)
-                    2. list of Strengths
-                    3. list of Areas for Improvement
-                    4. list of Specific tips for the ${session.region} market.
-                    
-                    YOU MUST RETURN ONLY A JSON OBJECT in this exact format:
-                    {
-                      "score": 85,
-                      "responses": [
-                        { "suggestedAnswer": "...", "analysis": "..." },
-                        ...
-                      ],
-                      "overall": {
-                        "strengths": ["...", "..."],
-                        "improvements": ["...", "..."],
-                        "marketTips": ["...", "..."]
-                      }
-                    }`,
+                     For each question, provide:
+                     1. A "suggestedAnswer" (The ideal professional answer).
+                     2. A brief "analysis" of the user's answer.
+                     
+                     Also provide an overall report:
+                     1. Overall Score (0-100)
+                     2. list of Strengths
+                     3. list of Areas for Improvement
+                     4. list of Specific tips for the ${session.region} market.
+                     
+                     YOU MUST RETURN ONLY A JSON OBJECT in this exact format:
+                     {
+                       "score": <number>,
+                       "responses": [
+                         { "suggestedAnswer": "...", "analysis": "..." },
+                         ...
+                       ],
+                       "overall": {
+                         "strengths": ["...", "..."],
+                         "improvements": ["...", "..."],
+                         "marketTips": ["...", "..."]
+                       }
+                     }`,
             },
             {
                role: 'user',
@@ -193,5 +217,16 @@ export class IntervoAIService {
 
    async getSessionDetails(sessionId: string) {
       return await IntervoSession.findById(sessionId)
+   }
+
+   async generateSpeech(text: string) {
+      const mp3 = await this.openai.audio.speech.create({
+         model: 'tts-1',
+         voice: 'nova', // Professional and clear voice
+         input: text,
+      })
+
+      const buffer = Buffer.from(await mp3.arrayBuffer())
+      return buffer
    }
 }

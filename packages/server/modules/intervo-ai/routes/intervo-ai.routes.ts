@@ -11,4 +11,6 @@ router.get('/session/feedback/:sessionId', controller.getFeedback)
 router.get('/sessions', controller.getHistory)
 router.get('/sessions/:sessionId', controller.getSessionDetails)
 
+router.post('/speech', controller.generateSpeech)
+
 export default router

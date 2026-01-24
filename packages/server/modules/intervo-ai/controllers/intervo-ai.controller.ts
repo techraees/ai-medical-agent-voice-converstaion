@@ -19,8 +19,8 @@ export class IntervoAIController {
 
    startSession = async (req: Request, res: Response) => {
       try {
-         const { topic, region, userId } = req.body
-         const session = await this.intervoAIService.startSession(topic, region, userId)
+         const { topic, region, userId, questionCount } = req.body
+         const session = await this.intervoAIService.startSession(topic, region, userId, questionCount)
          res.status(201).json(session)
       } catch (error: any) {
          res.status(500).json({ error: error.message })
@@ -70,6 +70,24 @@ export class IntervoAIController {
          }
          const details = await this.intervoAIService.getSessionDetails(sessionId)
          res.json(details)
+      } catch (error: any) {
+         res.status(500).json({ error: error.message })
+      }
+   }
+
+   generateSpeech = async (req: Request, res: Response) => {
+      try {
+         const { text } = req.body
+         if (!text) {
+            res.status(400).json({ error: 'Text is required' })
+            return
+         }
+         const audioBuffer = await this.intervoAIService.generateSpeech(text)
+         res.set({
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': audioBuffer.length,
+         })
+         res.send(audioBuffer)
       } catch (error: any) {
          res.status(500).json({ error: error.message })
       }

@@ -43,8 +43,10 @@ export default function IntervoAIPage() {
    const [history, setHistory] = useState<any[]>([])
    const [loading, setLoading] = useState(false)
    const [expandedResponse, setExpandedResponse] = useState<number | null>(null)
+   const [questionCount, setQuestionCount] = useState(5)
 
    const recognitionRef = useRef<any>(null)
+   const audioRef = useRef<HTMLAudioElement | null>(null)
 
    // Initialize Speech Recognition
    useEffect(() => {
@@ -89,6 +91,7 @@ export default function IntervoAIPage() {
          const response = await axios.post('http://localhost:5000/api/intervo-ai/session/start', {
             topic,
             region,
+            questionCount,
          })
          setSessionId(response.data.sessionId)
          setCurrentQuestion(response.data.firstQuestion)
@@ -122,6 +125,34 @@ export default function IntervoAIPage() {
          }
       } catch (error) {
          console.error('Error submitting answer', error)
+      } finally {
+         setLoading(false)
+      }
+   }
+
+   const handleSkipQuestion = async () => {
+      setLoading(true)
+      if (isRecording) {
+         recognitionRef.current.stop()
+         setIsRecording(false)
+      }
+
+      try {
+         const response = await axios.post('http://localhost:5000/api/intervo-ai/session/answer', {
+            sessionId,
+            answer: "I don't know",
+         })
+
+         if (response.data.status === 'completed') {
+            handleGetFeedback(sessionId)
+         } else {
+            setCurrentQuestion(response.data.nextQuestion)
+            setProgress(response.data.progress)
+            setTranscript('')
+            speak(response.data.nextQuestion)
+         }
+      } catch (error) {
+         console.error('Error skipping question', error)
       } finally {
          setLoading(false)
       }
@@ -163,13 +194,33 @@ export default function IntervoAIPage() {
       }
    }
 
-   const speak = (text: string) => {
-      if (window.speechSynthesis) {
-         window.speechSynthesis.cancel()
-         const utterance = new SpeechSynthesisUtterance(text)
-         utterance.rate = 0.9
-         utterance.pitch = 1
-         window.speechSynthesis.speak(utterance)
+   const speak = async (text: string) => {
+      try {
+         // Stop any current audio
+         if (audioRef.current) {
+            audioRef.current.pause()
+            audioRef.current = null
+         }
+
+         const response = await axios.post(
+            'http://localhost:5000/api/intervo-ai/speech',
+            { text },
+            { responseType: 'blob' }
+         )
+
+         const audioUrl = URL.createObjectURL(response.data)
+         const audio = new Audio(audioUrl)
+         audioRef.current = audio
+         audio.play()
+      } catch (error) {
+         console.error('Error in speak:', error)
+         // Fallback to basic TTS if backend fails
+         if (window.speechSynthesis) {
+            window.speechSynthesis.cancel()
+            const utterance = new SpeechSynthesisUtterance(text)
+            utterance.rate = 0.9
+            window.speechSynthesis.speak(utterance)
+         }
       }
    }
 
@@ -318,6 +369,17 @@ export default function IntervoAIPage() {
                         className="h-12 border-slate-200 font-medium"
                      />
                   </div>
+                  <div className="space-y-2">
+                     <label className="text-sm font-bold text-slate-600">Number of Questions</label>
+                     <Input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={questionCount}
+                        onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+                        className="h-12 border-slate-200 font-medium"
+                     />
+                  </div>
                   <Button
                      onClick={handleStartInterview}
                      disabled={!topic}
@@ -428,6 +490,14 @@ export default function IntervoAIPage() {
                               className="h-12 rounded-xl border-slate-300 hover:bg-slate-100 font-bold"
                            >
                               Submit Answer
+                           </Button>
+                           <Button
+                              onClick={handleSkipQuestion}
+                              disabled={loading}
+                              variant="ghost"
+                              className="h-12 rounded-xl text-slate-500 hover:text-red-600 font-bold"
+                           >
+                              I don't know (Skip)
                            </Button>
                         </div>
                      </CardContent>
