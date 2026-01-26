@@ -36,7 +36,9 @@ export default function IntervoAIPage() {
    const [sessionId, setSessionId] = useState('')
    const [currentQuestion, setCurrentQuestion] = useState('')
    const [transcript, setTranscript] = useState('')
+   const [score, setScore] = useState('')
    const [isRecording, setIsRecording] = useState(false)
+   const [feedBackLoading, setFeedBackLoading] = useState(false)
    const [progress, setProgress] = useState('0/0')
    const [feedback, setFeedback] = useState<any>(null)
    const [responses, setResponses] = useState<any[]>([])
@@ -159,16 +161,17 @@ export default function IntervoAIPage() {
    }
 
    const handleGetFeedback = async (id: string) => {
-      setLoading(true)
+      setFeedBackLoading(true)
       try {
          const response = await axios.get(`http://localhost:5000/api/intervo-ai/session/feedback/${id}`)
          setFeedback(response.data.feedback)
          setResponses(response.data.responses || [])
+         setScore(response.data.score || [])
          setStep('RESULTS')
       } catch (error) {
          console.error('Error getting feedback', error)
       } finally {
-         setLoading(false)
+         setFeedBackLoading(false)
       }
    }
 
@@ -484,20 +487,34 @@ export default function IntervoAIPage() {
                               )}
                            </Button>
                            <Button
-                              onClick={handleSubmitAnswer}
-                              disabled={!transcript || loading}
+                              onClick={feedBackLoading ? () => {} : handleSubmitAnswer}
+                              disabled={!transcript || loading || feedBackLoading}
                               variant="outline"
                               className="h-12 rounded-xl border-slate-300 hover:bg-slate-100 font-bold"
                            >
-                              Submit Answer
+                              {feedBackLoading ? (
+                                 <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Processing...
+                                 </div>
+                              ) : (
+                                 <div className="flex items-center gap-2">Submit Answer</div>
+                              )}
                            </Button>
                            <Button
-                              onClick={handleSkipQuestion}
-                              disabled={loading}
+                              onClick={feedBackLoading ? () => {} : handleSkipQuestion}
+                              disabled={loading || feedBackLoading}
                               variant="ghost"
                               className="h-12 rounded-xl text-slate-500 hover:text-red-600 font-bold"
                            >
-                              I don't know (Skip)
+                              {feedBackLoading ? (
+                                 <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Processing...
+                                 </div>
+                              ) : (
+                                 <div className="flex items-center gap-2">I don't know (Skip)</div>
+                              )}
                            </Button>
                         </div>
                      </CardContent>
@@ -525,7 +542,7 @@ export default function IntervoAIPage() {
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="bg-white border-slate-200 shadow-lg text-center p-6 flex flex-col justify-center">
                      <h4 className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-2">Overall Score</h4>
-                     <p className="text-6xl font-black text-blue-600">{feedback?.score || '85'}%</p>
+                     <p className="text-6xl font-black text-blue-600">{score}%</p>
                   </Card>
                   <Card className="md:col-span-2 bg-white border-slate-200 shadow-lg p-6 space-y-4">
                      <h4 className="text-blue-600 font-bold flex items-center gap-2 font-black uppercase tracking-tighter">

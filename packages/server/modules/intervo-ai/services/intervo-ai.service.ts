@@ -222,7 +222,7 @@ export class IntervoAIService {
    async generateSpeech(text: string) {
       const mp3 = await this.openai.audio.speech.create({
          model: 'tts-1',
-         voice: 'nova', // Professional and clear voice
+         voice: 'shimmer', // Professional and clear voice
          input: text,
       })
 
