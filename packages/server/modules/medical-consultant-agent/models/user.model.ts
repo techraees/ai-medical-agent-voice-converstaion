@@ -24,7 +24,6 @@ const UserSchema = new Schema<IUser>(
          unique: true,
          lowercase: true,
          trim: true,
-         index: true,
       },
       password: {
          type: String,
@@ -66,7 +65,5 @@ const UserSchema = new Schema<IUser>(
 )
 
 // Index for faster queries
-UserSchema.index({ email: 1 })
-UserSchema.index({ role: 1 })
 
 export const UserModel: Model<IUser> = model<IUser>('User', UserSchema, getCollectionName('users'))

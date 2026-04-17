@@ -3,6 +3,8 @@ import personalPortfolioRoutes from './modules/personal-portfolio/routes'
 import medicalConsultantAgentRoutes from './modules/medical-consultant-agent/routes'
 import themeParkChatbotRoutes from './modules/theme-part-chatbot/routes'
 import productReviewsSummarizerRoutes from './modules/product-reviews-summarizer/routes'
+import cyberSecurityRagSystemRoutes from './modules/cyber-security-rag-system/routes'
+import intervoAIRoutes from './modules/intervo-ai/routes/intervo-ai.routes'
 
 const router = Router()
 
@@ -19,5 +21,7 @@ router.use('/api/personal-portfolio', personalPortfolioRoutes)
 router.use('/api/medical-consultant-agent', medicalConsultantAgentRoutes)
 router.use('/api/theme-park-chatbot', themeParkChatbotRoutes)
 router.use('/api/product-reviews-summarizer', productReviewsSummarizerRoutes)
+router.use('/api/cyber-security-rag-system', cyberSecurityRagSystemRoutes)
+router.use('/api/intervo-ai', intervoAIRoutes)
 
 export default router

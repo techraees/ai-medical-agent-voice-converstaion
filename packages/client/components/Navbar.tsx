@@ -101,6 +101,26 @@ export function Navbar() {
             image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
          },
       },
+      {
+         href: '/cyber-security-rag-system',
+         label: 'CSRS',
+         hoverContent: {
+            title: 'Cyber Security RAG System',
+            body: "Expert consultation on Pakistan's Cyber Security Laws and Regulations. Navigate legal frameworks and ensure compliance with AI-powered insights.",
+            footer: 'Start Consultation',
+            image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+         },
+      },
+      {
+         href: '/intervo-ai',
+         label: 'IVAI',
+         hoverContent: {
+            title: 'IntervoAI - Interview + Voice + AI',
+            body: 'Premium AI-driven interview platform with real-time voice analysis and dynamic questioning. Level up your hiring or preparation.',
+            footer: 'Start Interview',
+            image: '/intervo-ai-preview.png',
+         },
+      },
    ]
 
    return (
